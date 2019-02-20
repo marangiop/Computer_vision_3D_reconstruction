@@ -16,7 +16,7 @@ xyz_T = pc_T.Location;
 p = horzcat(xyz, ones(size(xyz, 1), 1) )'; %[nx4]
 p_T = horzcat(xyz_T , ones(size(xyz_T, 1), 1))'; %[nx4]
 % Find A in:
-t_xyz = @(tx, ty, tz) [1, 0, 0, tx; 0, 1, 0, ty; 0, 0, 1, tz; 0, 0, 0, 1];
+t_xyz = @(tx, ty, tz) [1, 0, 0, tx; 0, 1, 0, ty; 0, 0, 1, tz; 0, 0, 0, 1];  %translaion matrix
 A = t_xyz(0.884, 0.442, 0.765) * rot_x_y_z(pi/3, 0, pi/4);  % what I measure
 new_p = A*p; %A is the transformation matrix
 
