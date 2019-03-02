@@ -1,44 +1,12 @@
+%%Removing Bob from frame 27
 rgb = office{27}.Color; % Extracting the colour data
 point = office{27}.Location; % Extracting the xyz data
 imag2d(rgb)
 
-%The while loop and variables declaration need to be commented out after
-%they have been run once 
+rect = getrect
 
-%I used this script in order to get the coordinate values of the bounding
-%https://www.youtube.com/watch?v=_lNngeLivJ8
-
-i = 1; x=0; spos=[]; % variables
-
-while x~=1
-    
-    imag2d(rgb); 
-    rect=imrect;
-    
-    pos = getPosition(rect);
-    r = insertShape(rgb, 'Rectangle', pos);
-    rgb=r;
-    
-    imag2d(rgb)
-        spos=[spos;pos];
-        xlswrite('C:\Users\maran\Desktop\Semester 2\Advanced Vision\Coursework\aa.xlsx', spos);
-    
-end
-
-%The while loop and variables declaration need to be commented out after
-%they have been run once 
-
-
-
-%This draws a rectangle on the image 
 hold on
-rectangle('Position', [91,6,235,475], 'EdgeColor','r', 'LineWidth', 3)
-
-
-
-
-
-%This sets all the values within the rectangle to 0 - NOT WORKING
+rectangle('Position', rect, 'EdgeColor','r', 'LineWidth', 3)
 
 new_rgb =[];
 color_pc = rgb;
@@ -50,11 +18,43 @@ rec_g = reshape(g, [640, 480]);
 rec_b = reshape(b, [640, 480]);
 new_rgb = cat(3, rec_r', rec_g', rec_b');
 
-x_coord_lower = 6;
-y_coord_lower = 91;
-new_rgb(x_coord_lower:475+x_coord_lower, y_coord_lower:235+y_coord_lower, : )= 0;   
-imshow(new_rgb)
-pause(0.1)
+x_coord_lower = rect(2);
+y_coord_lower = rect(1);
+height= rect(3);
+width= rect(4);
+
+new_rgb(x_coord_lower:width+x_coord_lower, y_coord_lower:height+y_coord_lower, : )= 0;   
+%imshow(new_rgb)
+%pause(0.1)
+
+%% Extracting the x y and z
+x = point(:,1);
+y = point(:,2);
+z = point(:,3);
+    
+%% reshaping x y and z
+rec_x = reshape(x, [640, 480]);
+rec_y = reshape(y, [640, 480]);
+rec_z = reshape(z, [640, 480]);
+new_xyz = cat(3, rec_x', rec_y', rec_z');
+
+    
+%% Eliminate region containg Bob in the xyz  
+new_xyz(x_coord_lower:width+x_coord_lower, y_coord_lower:height+y_coord_lower, 1 )=0;
+new_xyz(x_coord_lower:width+x_coord_lower, y_coord_lower:height+y_coord_lower, 2 )=0;
+new_xyz(x_coord_lower:width+x_coord_lower, y_coord_lower:height+y_coord_lower, 3 )=0;
+   
+
+%% Generate new pc
+pc= pointCloud(new_xyz, 'Color', new_rgb); % Creating a point-cloud variable
+
+figure(1)
+pcshow(pc)
+figure(2)
+imshow(new_rgb) 
+
+
+
 
 
 
