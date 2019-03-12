@@ -1,69 +1,113 @@
-% num = match(image1, image2)
+% Load the training data 
+office = load('office1.mat');
+office = office.pcl_train;
+% Uncomment to load the test file
+% office = load('office2.mat');
+% office = office.pcl_test;
 %
-% This function reads two images, finds their SIFT features, and
-%   displays lines connecting the matched keypoints.  A match is accepted
-%   only if its distance is less than distRatio times the distance to the
-%   second closest match.
-% It returns the number of matches displayed.
-%
-% Example: match('scene.pgm','book.pgm');
+%matches = zeros(1, length(office)-1);  % store the num of matching points for each pair
+% for i = 1:2 % Reading 40 point-clouds	  
+    i = 27;    % frame starting point
+    % _1 means left image, _2 means right image
+    rgb_1 = office{i}.Color; % Extracting the colour data   _1 means left image, _2 means right image
+    point_1 = office{i}.Location; % Extracting the xyz data
+    pc_1 = pointCloud(point_1, 'Color', rgb_1); % Creating a point-cloud variable
+    % judge if you want to remove Bob
+    figure();
+    imag2d(rgb_1);
+    answer1 = input('Do you want to remove Bob? (y/n) \n');
+    if answer1 == 'y'
+        [rgb_1, point_1, pc_1] = removebob(rgb_1, point_1, pc_1);
+    end
+    
+    % read the next frame
+    rgb_2 = office{i+1}.Color; % Extracting the colour data   _1 means left image, _2 means right image
+    point_2 = office{i+1}.Location; % Extracting the xyz data
+    pc_2 = pointCloud(point_2, 'Color', rgb_2); % Creating a point-cloud variable
+    % judge if you want to remove Bob
+    figure();
+    imag2d(rgb_2);
+    answer2 = input('Do you want to remove Bob? (y/n) \n');
+    if answer2 == 'y'
+        [rgb_2, point_2, pc_2] = removebob(rgb_2, point_2, pc_2);
+    end
+    
+    %construct image by rgb
+    r_1 = rgb_1(:,1);
+    g_1 = rgb_1(:,2);
+    b_1 = rgb_1(:,3);
+    r_2 = rgb_2(:,1);
+    g_2 = rgb_2(:,2);
+    b_2 = rgb_2(:,3);
+    % reshaping each array (r, g, b) to obtain a [512x424] matrix 
+    rec_r_1 = reshape(r_1, [640, 480]);
+    rec_g_1 = reshape(g_1, [640, 480]);
+    rec_b_1 = reshape(b_1, [640, 480]);
+    new_rgb_1 = cat(3, rec_r_1', rec_g_1', rec_b_1');
+    rec_r_2 = reshape(r_2, [640, 480]);
+    rec_g_2 = reshape(g_2, [640, 480]);
+    rec_b_2 = reshape(b_2, [640, 480]);
+    new_rgb_2 = cat(3, rec_r_2', rec_g_2', rec_b_2');
+    % get matching point
+    [num, M, D] = match(new_rgb_1,new_rgb_2);
+    %matches(i) = num;   % get the num of matches for wach pair
+    
+    % find the true 3D position point in the point cloud given sift
+    % position from grey image
+    M_index = [];
+    D_index = [];
+    for l = 1:size(M, 2)
+        temp1 = round(480 * (M(1,l) - 1) + M(2,l));
+        temp2 = round(480 * (D(1,l) - 1) + D(2,l));
+        if M(1,l) ~= 0
+            M_index = [M_index, temp1];
+            D_index = [D_index, temp2];
+        end
+    end
+    new_M = zeros(length(M_index),3); % using M_index or D_index doesn't matter, the size corresponds to N in the paper
+    new_D = zeros(length(D_index),3);  
+    for j = 1:length(M_index)   
+        new_M(j,:) = point_1(M_index(j),:);
+        new_D(j,:) = point_2(D_index(j),:);
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%Ransac
+    count = 0; % give the initial a small number for the initial loop
+    for m = 1:20000     % randomly pick 8 matching points(3 pairs) 20000 times to find the one giving smallest distance
+        [sample_D, index] = datasample(new_D, 3,'Replace',false);  % randomly get matching pairs and their index
+        sample_M = [new_M(index(1),:); new_M(index(2),:); new_M(index(3),:)]; % get the sample according to index
+        % do SVD to find Translation matrix and Rotation matrix
+        [R, T] = rot_tran(sample_M, sample_D); % this is the change from coordinate system D to M, which is from latter to the former
+        % apply it to all matching pairs
+        new_D_2 = zeros(size(new_D));
+        for k = 1:size(new_D_2,1)
+            new_D_2(k,:) = new_D(k,:) * R + T';
+        end
+        distance_vector = sum((new_D_2-new_M).^2, 2);
+        count_temp = length(find(distance_vector < 0.15));   %threshold could be changed
+        if count_temp > count
+            count = count_temp;
+            Best_R = R;
+            Best_T = T;
+        end
+    end
+    
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % do SVD to find Translation matrix and Rotation matrix
+    %[R, T] = rot_tran(new_M, new_D); % this is the change from coordinate system D to M, which is from latter to the former
+    % apply it to second pc
+    new_point_2 = zeros(size(point_2));
+    for k = 1:size(new_point_2,1)
+        new_point_2(k,:) = point_2(k,:) * Best_R + Best_T';
+    end
+    
+    new_pc_2 = pointCloud(new_point_2, 'Color', rgb_2); % Creating a point-cloud variable
+    figure();
+    subplot(2, 2, 1), pcshow(pc_1), title('pc1');
+    subplot(2, 2, 2), pcshow(pc_2), title('pc2');
+    subplot(2, 2, 3), pcshow(new_pc_2), title('new pc2');
+    subplot(2, 2, 4), pcshow(pc_1); hold on; pcshow(new_pc_2), title('pc1 and new pc2');
 
-function  [num, points_set_1, points_set_2] = match(image1, image2)    %
-% points_set_1, points_set_2 return matching points set from image1 and
-% image2   2xN matrix [X1, ..., XN; Y1, ..., YN]
-
-% Find SIFT keypoints for each image
-[im1, des1, loc1] = sift(image1);
-[im2, des2, loc2] = sift(image2);
-
-% For efficiency in Matlab, it is cheaper to compute dot products between
-%  unit vectors rather than Euclidean distances.  Note that the ratio of 
-%  angles (acos of dot products of unit vectors) is a close approximation
-%  to the ratio of Euclidean distances for small angles.
-%
-% distRatio: Only keep matches in which the ratio of vector angles from the
-%   nearest to second nearest neighbor is less than distRatio.
-distRatio = 0.1;   
-
-% For each descriptor in the first image, select its match to second image.
-des2t = des2';                          % Precompute matrix transpose
-points_set_1 = zeros(2, 2000);          % normally the num of sift points will be less than 2000
-points_set_2 = zeros(2, 2000);          % ---1---
-for i = 1 : size(des1,1)
-   dotprods = des1(i,:) * des2t;        % Computes vector of dot products
-   [vals,indx] = sort(acos(dotprods));  % Take inverse cosine and sort results
-
-   % Check if nearest neighbor has angle less than distRatio times 2nd.
-   if (vals(1) < distRatio * vals(2))
-      match(i) = indx(1);
-      points_set_1(1,i) = loc1(i,1);         % ---2---% find the nearest neighbour as true point
-      points_set_1(2,i) = loc1(i,2);
-      points_set_2(1,i) = loc2(indx(1),1);   
-      points_set_2(2,i) = loc2(indx(1),2);
-   else
-      match(i) = 0;
-   end
-end
-% remove 0 in points set          ---3---
-%points_set_1 = points_set_1(points_set_1~=0);
-%points_set_2 = points_set_2(points_set_2~=0);
-
-% Create a new image showing the two images side by side.
-im3 = appendimages(im1,im2);
-
-%Show a figure with lines joining the accepted matches.
-figure('Position', [100 100 size(im3,2) size(im3,1)]);
-colormap('gray');
-imagesc(im3);
-hold on;
-cols1 = size(im1,2);
-for i = 1: size(des1,1)
-  if (match(i) > 0)
-    line([loc1(i,2) loc2(match(i),2)+cols1], ...
-         [loc1(i,1) loc2(match(i),1)], 'Color', 'c');
-  end
-end
-hold off;
-num = sum(match > 0);
-fprintf('Found %d matches.\n', num);
-
+%end
