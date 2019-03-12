@@ -36,10 +36,10 @@ for i = 1 : size(des1,1)
    % Check if nearest neighbor has angle less than distRatio times 2nd.
    if (vals(1) < distRatio * vals(2))
       match(i) = indx(1);
-      points_set_1(1,i) = round(loc1(i,1));         % ---2---% find the nearest neighbour as true point
-      points_set_1(2,i) = round(loc1(i,2));
-      points_set_2(1,i) = round(loc2(indx(1),1));   
-      points_set_2(2,i) = round(loc2(indx(1),2));
+      points_set_1(1,i) = loc1(i,1);         % ---2---% find the nearest neighbour as true point
+      points_set_1(2,i) = loc1(i,2);
+      points_set_2(1,i) = loc2(indx(1),1);   
+      points_set_2(2,i) = loc2(indx(1),2);
    else
       match(i) = 0;
    end
@@ -52,21 +52,18 @@ end
 im3 = appendimages(im1,im2);
 
 %Show a figure with lines joining the accepted matches.
-%figure('Position', [100 100 size(im3,2) size(im3,1)]);
-%colormap('gray');
-%imagesc(im3);
-%hold on;
-%cols1 = size(im1,2);
-%for i = 1: size(des1,1)
-  %if (match(i) > 0)
-    %line([loc1(i,2) loc2(match(i),2)+cols1], ...
-         %[loc1(i,1) loc2(match(i),1)], 'Color', 'c');
-  %end
-%end
-%hold off;
+figure('Position', [100 100 size(im3,2) size(im3,1)]);
+colormap('gray');
+imagesc(im3);
+hold on;
+cols1 = size(im1,2);
+for i = 1: size(des1,1)
+  if (match(i) > 0)
+    line([loc1(i,2) loc2(match(i),2)+cols1], ...
+         [loc1(i,1) loc2(match(i),1)], 'Color', 'c');
+  end
+end
+hold off;
 num = sum(match > 0);
 fprintf('Found %d matches.\n', num);
-
-
-
 
