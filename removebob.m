@@ -51,14 +51,14 @@ new_point(x_coord_lower:width+x_coord_lower, y_coord_lower:height+y_coord_lower,
 
 %% Generate new pc
 % shape rgb and point back to 307200x3 format for new_pc
-new_r = reshape(new_rgb(:,:,1),[307200,1]);
-new_g = reshape(new_rgb(:,:,2),[307200,1]);
-new_b = reshape(new_rgb(:,:,3),[307200,1]);
+new_r = reshape((new_rgb(:,:,1))',[307200,1]);    % there is transpose when using 'cat', so transpose back here
+new_g = reshape((new_rgb(:,:,2))',[307200,1]);
+new_b = reshape((new_rgb(:,:,3))',[307200,1]);
 new_rgb = [new_r, new_g, new_b];
 
-new_x = reshape(new_point(:,:,1),[307200,1]);
-new_y = reshape(new_point(:,:,2),[307200,1]);
-new_z = reshape(new_point(:,:,3),[307200,1]);
+new_x = reshape((new_point(:,:,1))',[307200,1]);
+new_y = reshape((new_point(:,:,2))',[307200,1]);
+new_z = reshape((new_point(:,:,3))',[307200,1]);
 new_point = [new_x, new_y, new_z];
 new_pc= pointCloud(new_point, 'Color', new_rgb); % Creating a point-cloud variable
 
