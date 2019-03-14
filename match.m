@@ -82,7 +82,7 @@ cols1 = size(im1,2);
 for i = 1: size(des1,1)
   if (match(i) > 0)
     line([loc1(i,2) loc2(match(i),2)+cols1], ...
-         [loc1(i,1) loc2(match(i),1)], 'Color', 'r');
+         [loc1(i,1) loc2(match(i),1)], 'Color', 'g');
   end
 end
 hold off;
@@ -106,6 +106,6 @@ c1 = keypoint(2) + len * (- s * y1 + c * x1);
 r2 = keypoint(1) - len * (c * y2 + s * x2);
 c2 = keypoint(2) + len * (- s * y2 + c * x2);
 
-line([c1 c2], [r1 r2], 'Color', 'c');
+line([c1 c2], [r1 r2], 'Color', 'r');
 
 
