@@ -56,14 +56,56 @@ figure('Position', [100 100 size(im3,2) size(im3,1)]);
 colormap('gray');
 imagesc(im3);
 hold on;
+% draw sift points in the first image
+imsize = size(im1);
+for i = 1: size(loc1,1)
+    % Draw an arrow, each line transformed according to keypoint parameters.
+    TransformLine(imsize, loc1(i,:), 0.0, 0.0, 1.0, 0.0);
+    TransformLine(imsize, loc1(i,:), 0.85, 0.1, 1.0, 0.0);
+    TransformLine(imsize, loc1(i,:), 0.85, -0.1, 1.0, 0.0);
+end
+% draw sift points in the second image, shoud be modified based on combined
+% image (im3)
+imsize = size(im3);
+new_loc2 = loc2;  % used as sift points location for right image(from im2) in im3
+new_loc2(:,2) = new_loc2(:,2) + 640; % transfer the y position from im2 to im3 
+for i = 1: size(new_loc2,1)
+    % Draw an arrow, each line transformed according to keypoint parameters.
+    TransformLine(imsize, new_loc2(i,:), 0.0, 0.0, 1.0, 0.0);
+    TransformLine(imsize, new_loc2(i,:), 0.85, 0.1, 1.0, 0.0);
+    TransformLine(imsize, new_loc2(i,:), 0.85, -0.1, 1.0, 0.0);
+end
+
+
+% drawing matching points
 cols1 = size(im1,2);
 for i = 1: size(des1,1)
   if (match(i) > 0)
     line([loc1(i,2) loc2(match(i),2)+cols1], ...
-         [loc1(i,1) loc2(match(i),1)], 'Color', 'c');
+         [loc1(i,1) loc2(match(i),1)], 'Color', 'r');
   end
 end
 hold off;
 num = sum(match > 0);
 fprintf('Found %d matches.\n', num);
+
+% This is the function from showkeys.m, Draw an arrow, each line transformed according to keypoint parameters.
+function TransformLine(imsize, keypoint, x1, y1, x2, y2)
+
+% The scaling of the unit length arrow is set to approximately the radius
+%   of the region used to compute the keypoint descriptor.
+len = 6 * keypoint(3);
+
+% Rotate the keypoints by 'ori' = keypoint(4)
+s = sin(keypoint(4));
+c = cos(keypoint(4));
+
+% Apply transform
+r1 = keypoint(1) - len * (c * y1 + s * x1);
+c1 = keypoint(2) + len * (- s * y1 + c * x1);
+r2 = keypoint(1) - len * (c * y2 + s * x2);
+c2 = keypoint(2) + len * (- s * y2 + c * x2);
+
+line([c1 c2], [r1 r2], 'Color', 'c');
+
 
