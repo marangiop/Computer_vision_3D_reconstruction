@@ -8,7 +8,7 @@
 %
 % Example: match('scene.pgm','book.pgm');
 
-function  [num, points_set_1, points_set_2] = match(image1, image2)    %
+function  [num, points_set_1, points_set_2] = match(image1, image2, frame_num)    %
 % points_set_1, points_set_2 return matching points set from image1 and
 % image2   2xN matrix [X1, ..., XN; Y1, ..., YN]
 
@@ -23,7 +23,17 @@ function  [num, points_set_1, points_set_2] = match(image1, image2)    %
 %
 % distRatio: Only keep matches in which the ratio of vector angles from the
 %   nearest to second nearest neighbor is less than distRatio.
-distRatio = 0.1;   
+if frame_num == 27 || frame_num == 24 || frame_num == 33 || frame_num == 22 || frame_num == 25
+    distRatio = 0.65;  
+elseif frame_num == 34 
+    distRatio = 0.55;
+elseif frame_num == 26 
+    distRatio = 0.7;
+elseif frame_num == 36
+    distRatio = 0.72;
+else
+    distRatio = 0.4;
+end
 
 % For each descriptor in the first image, select its match to second image.
 des2t = des2';                          % Precompute matrix transpose
@@ -36,10 +46,10 @@ for i = 1 : size(des1,1)
    % Check if nearest neighbor has angle less than distRatio times 2nd.
    if (vals(1) < distRatio * vals(2))
       match(i) = indx(1);
-      points_set_1(1,i) = loc1(i,1);         % ---2---% find the nearest neighbour as true point
-      points_set_1(2,i) = loc1(i,2);
-      points_set_2(1,i) = loc2(indx(1),1);   
-      points_set_2(2,i) = loc2(indx(1),2);
+      points_set_1(1,i) = round(loc1(i,1));         % ---2---% find the nearest neighbour as true point
+      points_set_1(2,i) = round(loc1(i,2));
+      points_set_2(1,i) = round(loc2(indx(1),1));   
+      points_set_2(2,i) = round(loc2(indx(1),2));
    else
       match(i) = 0;
    end
@@ -107,5 +117,7 @@ r2 = keypoint(1) - len * (c * y2 + s * x2);
 c2 = keypoint(2) + len * (- s * y2 + c * x2);
 
 line([c1 c2], [r1 r2], 'Color', 'r');
+
+
 
 

@@ -6,9 +6,16 @@ office = office.pcl_train;
 % office = office.pcl_test;
 %
 %matches = zeros(1, length(office)-1);  % store the num of matching points for each pair
-% for i = 1:2 % Reading 40 point-clouds	  
-    i = 27;    % frame starting point
+% load rotation data from part 2
+Data1 = load('rot_all.mat');
+rot_all = Data1.rot_all;
+% load transition data from part 2
+Data2 = load('tran_all.mat');
+tran_all = Data2.tran_all;
+for i = 1:39 % Reading 40 point-clouds	  
+    %i = 26;    % frame starting point
     % _1 means left image, _2 means right image
+    i
     rgb_1 = office{i}.Color; % Extracting the colour data   _1 means left image, _2 means right image
     point_1 = office{i}.Location; % Extracting the xyz data
     pc_1 = pointCloud(point_1, 'Color', rgb_1); % Creating a point-cloud variable
@@ -49,7 +56,7 @@ office = office.pcl_train;
     rec_b_2 = reshape(b_2, [640, 480]);
     new_rgb_2 = cat(3, rec_r_2', rec_g_2', rec_b_2');
     % get matching point
-    [num, M, D] = match(new_rgb_1,new_rgb_2);
+    [num, M, D] = match(new_rgb_1, new_rgb_2, i);
     %matches(i) = num;   % get the num of matches for wach pair
     
     % find the true 3D position point in the point cloud given sift
@@ -57,8 +64,8 @@ office = office.pcl_train;
     M_index = [];
     D_index = [];
     for l = 1:size(M, 2)
-        temp1 = round(480 * (M(1,l) - 1) + M(2,l));
-        temp2 = round(480 * (D(1,l) - 1) + D(2,l));
+        temp1 = 480 * (M(1,l) - 1) + M(2,l);   % used to use round causing error
+        temp2 = 480 * (D(1,l) - 1) + D(2,l);
         if M(1,l) ~= 0
             M_index = [M_index, temp1];
             D_index = [D_index, temp2];
@@ -67,8 +74,10 @@ office = office.pcl_train;
     new_M = zeros(length(M_index),3); % using M_index or D_index doesn't matter, the size corresponds to N in the paper
     new_D = zeros(length(D_index),3);  
     for j = 1:length(M_index)   
-        new_M(j,:) = point_1(M_index(j),:);
-        new_D(j,:) = point_2(D_index(j),:);
+        if ~isnan(point_1(M_index(j),:)) & ~isnan(point_2(D_index(j),:))   % throw away nan matching
+            new_M(j,:) = point_1(M_index(j),:);
+            new_D(j,:) = point_2(D_index(j),:);
+        end
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%Ransac
@@ -83,16 +92,27 @@ office = office.pcl_train;
         for k = 1:size(new_D_2,1)
             new_D_2(k,:) = new_D(k,:) * R + T';
         end
-        distance_vector = sum((new_D_2-new_M).^2, 2);
-        count_temp = length(find(distance_vector < 0.15));   %threshold could be changed
+        distance_vector = sum((new_D_2-new_M).^2, 2);    %euclidean distance
+        if i == 26 || i == 27 || i == 36
+            distance_threshold = 0.35;
+        elseif i == 22 || i == 24 || i == 25 || i == 33 || i == 34
+            distance_threshold = 0.1;
+        else
+            distance_threshold = 0.06;
+        end
+        count_temp = length(find(distance_vector < distance_threshold));   %threshold could be changed
         if count_temp > count
             count = count_temp;
             Best_R = R;
             Best_T = T;
-        end
+        end 
     end
-    
-    
+    % put all rots and trans in
+    rot_all(:,:,i) = Best_R;
+    tran_all(:,:,i) = Best_T;
+    % saving the file by using save
+    save('rot_all.mat', 'rot_all');
+    save('tran_all.mat', 'tran_all');
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % do SVD to find Translation matrix and Rotation matrix
@@ -103,11 +123,12 @@ office = office.pcl_train;
         new_point_2(k,:) = point_2(k,:) * Best_R + Best_T';
     end
     
-    new_pc_2 = pointCloud(new_point_2, 'Color', rgb_2); % Creating a point-cloud variable
+    new_pc_2 = pointCloud(new_point_2, 'Color', rgb_2); % new pc2 moved from second coordinate to first coordinate
+    merge_pcs = pcmerge(pc_1, pc_2, 1);   %merge two pcs
     figure();
     subplot(2, 2, 1), pcshow(pc_1), title('pc1');
     subplot(2, 2, 2), pcshow(pc_2), title('pc2');
     subplot(2, 2, 3), pcshow(new_pc_2), title('new pc2');
-    subplot(2, 2, 4), pcshow(pc_1); hold on; pcshow(new_pc_2), title('pc1 and new pc2');
-
-%end
+    subplot(2, 2, 4), pcshow(pc_1); hold on; pcshow(merge_pcs), title('pc1 and new pc2');
+    
+end
