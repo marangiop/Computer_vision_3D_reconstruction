@@ -19,3 +19,4 @@ figure(1)
 pcshow(pc)
 figure(2)
 imag2d(rgb) % Shows the 2D image
+
