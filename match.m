@@ -23,37 +23,74 @@ function  [num, points_set_1, points_set_2] = match(image1, image2, frame_num)  
 %
 % distRatio: Only keep matches in which the ratio of vector angles from the
 %   nearest to second nearest neighbor is less than distRatio.
-if frame_num == 27 || frame_num == 24 || frame_num == 33 || frame_num == 22 || frame_num == 25
-    distRatio = 0.65;  
-elseif frame_num == 34 
-    distRatio = 0.55;
-elseif frame_num == 26 
-    distRatio = 0.7;
-elseif frame_num == 36
-    distRatio = 0.72;
-else
-    distRatio = 0.4;
-end
+ if frame_num == 22 
+     distRatio = 0.5;
+ elseif frame_num == 24
+     distRatio = 0.7;
+ elseif frame_num == 28
+     distRatio = 0.6;
+ elseif frame_num == 36
+     distRatio = 0.73;
+
+ else
+     distRatio = 0.55;
+%     distRatio = 0.1;
+%  else
+%      distRatio = 0.7;
+  end
 
 % For each descriptor in the first image, select its match to second image.
 des2t = des2';                          % Precompute matrix transpose
 points_set_1 = zeros(2, 2000);          % normally the num of sift points will be less than 2000
 points_set_2 = zeros(2, 2000);          % ---1---
-for i = 1 : size(des1,1)
-   dotprods = des1(i,:) * des2t;        % Computes vector of dot products
-   [vals,indx] = sort(acos(dotprods));  % Take inverse cosine and sort results
+% tricky_frame_num = [36, 9, 24, 25, 26, 28];
+% if tricky_frame_num(tricky_frame_num==frame_num)
+    for i = 1 : size(des1,1)
+       dotprods = des1(i,:) * des2t;        % Computes vector of dot products
+       [vals,indx] = sort(acos(dotprods));  % Take inverse cosine and sort results
 
-   % Check if nearest neighbor has angle less than distRatio times 2nd.
-   if (vals(1) < distRatio * vals(2))
-      match(i) = indx(1);
-      points_set_1(1,i) = round(loc1(i,1));         % ---2---% find the nearest neighbour as true point
-      points_set_1(2,i) = round(loc1(i,2));
-      points_set_2(1,i) = round(loc2(indx(1),1));   
-      points_set_2(2,i) = round(loc2(indx(1),2));
-   else
-      match(i) = 0;
-   end
-end
+       % Check if nearest neighbor has angle less than distRatio times 2nd.
+       if (vals(1) < distRatio * vals(2))
+          match(i) = indx(1);
+          points_set_1(1,i) = round(loc1(i,1));         % ---2---% find the nearest neighbour as true point
+          points_set_1(2,i) = round(loc1(i,2));
+          points_set_2(1,i) = round(loc2(indx(1),1));   
+          points_set_2(2,i) = round(loc2(indx(1),2));
+       else
+          match(i) = 0;
+       end
+    end
+% else  % for general case, get the num matching points within the region of 20~50
+%     flag = 1;
+%     while flag == 1
+%         points_set_1 = zeros(2, 2000);          % normally the num of sift points will be less than 2000
+%         points_set_2 = zeros(2, 2000);          % ---1---
+%         for i = 1 : size(des1,1)
+%            dotprods = des1(i,:) * des2t;        % Computes vector of dot products
+%            [vals,indx] = sort(acos(dotprods));  % Take inverse cosine and sort results
+%            
+%            % Check if nearest neighbor has angle less than distRatio times 2nd.
+%            if (vals(1) < distRatio * vals(2))
+%               match(i) = indx(1);
+%               points_set_1(1,i) = round(loc1(i,1));         % ---2---% find the nearest neighbour as true point
+%               points_set_1(2,i) = round(loc1(i,2));
+%               points_set_2(1,i) = round(loc2(indx(1),1));   
+%               points_set_2(2,i) = round(loc2(indx(1),2));
+%            else
+%               match(i) = 0;
+%            end
+%         end
+%         if sum(match > 0) < 50 && sum(match > 0) > 20
+%             flag = 0;    %escape the loop because we have found enough matching points
+%         elseif sum(match > 0) <=20
+%             distRatio = distRatio + 0.02;
+%         else
+%             distRatio = distRatio - 0.02;
+%         end
+%     end
+% end
+
+
 % remove 0 in points set          ---3---
 %points_set_1 = points_set_1(points_set_1~=0);
 %points_set_2 = points_set_2(points_set_2~=0);
