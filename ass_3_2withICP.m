@@ -103,7 +103,7 @@ for i = 1:39 % Reading 40 point-clouds
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%ICP
     %construct new matching pc for icp
-        if i ~= 28 && i~=22 && i~=29
+        if i ~= 28 && i~=22 && i~=29   % for frame 28-29, 22-23, 29-30, icp for whole pc performs better than matching points
             temp_M_pc = pointCloud(new_M, 'Color', new_M_rgb);
             temp_D_pc = pointCloud(new_D, 'Color', new_D_rgb);
         %using matching points instead of sampling points(explained in matlab doc) to do icp
